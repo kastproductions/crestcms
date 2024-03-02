@@ -16,6 +16,9 @@
     "@emotion/styled": "^11.11.0",
     "@paralleldrive/cuid2": "^2.2.2",
     "@tanstack/react-query": "^5.24.1",
+    "@trpc/client": "11.0.0-next-beta.303",
+    "@trpc/react-query": "11.0.0-next-beta.303",
+    "@trpc/server": "11.0.0-next-beta.303",
     "framer-motion": "^11.0.8",
     "json-server": "1.0.0-alpha.23",
     "localforage": "^1.10.0",
@@ -26,15 +29,16 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.2",
     "sort-by": "^1.2.0",
-    "valtio": "^1.13.1",
+    "superjson": "^2.2.1",
+    "valtio": "^1.13.2",
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "eslint": "^8",
-    "eslint-config-next": "14.1.0",
-    "typescript": "^5"
+    "@types/node": "^20.11.24",
+    "@types/react": "^18.2.61",
+    "@types/react-dom": "^18.2.19",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "14.1.1",
+    "typescript": "^5.3.3"
   }
 }

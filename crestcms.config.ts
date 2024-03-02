@@ -2,15 +2,15 @@ import { c } from "~/lib/crest";
 
 const schema = c.schema({
   collections: {
-    author: c.model({
+    authors: c.model({
       name: c.string(),
       avatar: c.url(),
-      posts: c.hasMany("post"),
+      posts: c.hasMany("posts"),
     }),
-    post: c.model({
+    posts: c.model({
       title: c.string(),
       body: c.markdown(),
-      author: c.hasOne("author"),
+      author: c.hasOne("authors"),
     }),
     seo: c.model({
       title: c.string(),
@@ -29,7 +29,7 @@ const schema = c.schema({
     postsPage: c.model({
       seo: c.hasOne("seo"),
       hero: c.hasOne("hero"),
-      posts: c.hasMany("post"),
+      posts: c.hasMany("posts"),
     }),
     aboutPage: c.model({
       seo: c.hasOne("seo"),

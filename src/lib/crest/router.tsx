@@ -2,14 +2,27 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, Outlet, Link, RouterProvider, useMatches, useParams } from "react-router-dom";
-import { Box, Button, ChakraProvider, Container, HStack, SimpleGrid, Stack, Text } from "@chakra-ui/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  Box,
+  Button,
+  ChakraProvider,
+  Container,
+  FormControl,
+  FormHelperText,
+  FormLabel,
+  HStack,
+  Heading,
+  Input,
+  SimpleGrid,
+  Stack,
+  Text,
+  Textarea,
+} from "@chakra-ui/react";
 
 import { proxy, useSnapshot } from "valtio";
 import { Schema } from ".";
-import { useCollection, useDatabase } from "./hooks";
-
-const queryClient = new QueryClient();
+import { useCollection, useCollectionItem, useCollectionList, useDatabase } from "./hooks";
+import { TRPCReactProvider, api } from "./trpc/react";
 
 const router = createBrowserRouter([
   {
@@ -19,12 +32,10 @@ const router = createBrowserRouter([
       {
         path: "collection/:collectionId",
         element: <EntityList />,
-        children: [
-          {
-            path: ":id",
-            element: <EntityForm />,
-          },
-        ],
+      },
+      {
+        path: "collection/:collectionId/:id",
+        element: <EntityForm />,
       },
     ],
   },
@@ -36,11 +47,11 @@ export function renderAdminUi({ schema, rootId }: { schema: Schema; rootId: stri
   const appRoot = window.document.getElementById(rootId);
   ReactDOM.createRoot(appRoot!).render(
     <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <ChakraProvider>
+      <ChakraProvider>
+        <TRPCReactProvider>
           <RouterProvider router={router} />
-        </ChakraProvider>
-      </QueryClientProvider>
+        </TRPCReactProvider>
+      </ChakraProvider>
     </React.StrictMode>
   );
 }
@@ -49,12 +60,14 @@ function Root() {
   let { collectionId } = useParams();
 
   return (
-    <Stack spacing={0}>
-      <Header />
-      <Stack height="calc(100vh - 5.6rem)" direction="row" spacing={0}>
-        <SideNavigation />
-        {!collectionId && <Dashboard />}
-        {collectionId && <Outlet />}
+    <Stack direction="row" spacing={0}>
+      <SideNavigation />
+      <Stack spacing={0} w="full">
+        <Header />
+        <Stack height="calc(100vh - 12rem)" direction="row" spacing={0} overflowY="hidden">
+          {!collectionId && <Dashboard />}
+          {collectionId && <Outlet />}
+        </Stack>
       </Stack>
     </Stack>
   );
@@ -62,20 +75,12 @@ function Root() {
 
 function Dashboard() {
   const { schema } = useStore();
-  const keys = Object.keys(schema?.collections || {});
-  const database = useDatabase(keys);
-  console.log({ database });
+  const summary = api.collections.summary.useQuery();
+
   return (
     <Stack w="full" spacing={0}>
-      <HStack px={6} h={16} borderBottomColor="gray.200" borderBottomWidth="1px">
-        <Text fontWeight="bold" fontSize="lg">
-          Dashboard
-        </Text>
-      </HStack>
       <SimpleGrid columns={6} spacing={6} p={6}>
-        {database.data?.map((item) => {
-          console.log({ item });
-          const [name, values] = Object.entries(item)[0];
+        {summary.data?.map(({ name, count }) => {
           return (
             <Button
               key={name}
@@ -94,7 +99,7 @@ function Dashboard() {
               }}
             >
               <Text as="span" noOfLines={1}>
-                {name} ({values.length})
+                {name} ({count})
               </Text>
             </Button>
           );
@@ -108,8 +113,17 @@ function Header() {
   return (
     <Box as="header" w="full" borderBottomColor="gray.200" borderBottomWidth="1px">
       <Container maxW="9xl" w="full">
-        <HStack height={20}>
-          <Text fontWeight="black">Crest CMS</Text>
+        <HStack height={14}>
+          <Button
+            fontWeight="black"
+            as={Link}
+            to="/crest"
+            variant="link"
+            color="gray.900"
+            _hover={{ textDecoration: "none" }}
+          >
+            Crest CMS
+          </Button>
         </HStack>
       </Container>
     </Box>
@@ -119,25 +133,31 @@ function Header() {
 function SideNavigation() {
   const { collectionNames } = useStore();
   let { collectionId } = useParams();
+  const collections = api.collections.list.useQuery();
+
+  const activeStyles = (name: string) => {
+    const active = collectionId === name;
+    if (!active) return {};
+    return {
+      borderLeftColor: "gray.900",
+      bg: "gray.50",
+    };
+  };
+
   return (
-    <Stack spacing={0} minW={72} maxW={72} overflowY="hidden" borderRightColor="gray.200" borderRightWidth="1px">
-      <Button
-        h={14}
-        color="gray.900"
-        px={4}
-        as={Link}
-        variant="link"
-        rounded="none"
-        textAlign="left"
-        justifyContent="flex-start"
-        bg={!collectionId ? "gray.100" : "transparent"}
-      >
-        Dashboard
-      </Button>
-      <Text mt={8} color="gray.500" textTransform="uppercase" px={4} fontSize="sm" fontWeight="semibold">
+    <Stack
+      h="100vh"
+      spacing={0}
+      minW={72}
+      maxW={72}
+      overflowY="hidden"
+      borderRightColor="gray.200"
+      borderRightWidth="1px"
+    >
+      <Text mb={4} color="gray.500" textTransform="uppercase" pt={5} px={4} fontSize="sm" fontWeight="semibold">
         Collections
       </Text>
-      {collectionNames?.map((name) => {
+      {collections.data?.map((name) => {
         return (
           <Button
             key={name}
@@ -150,11 +170,13 @@ function SideNavigation() {
             rounded="none"
             textAlign="left"
             justifyContent="flex-start"
-            borderBottomColor="gray.200"
-            borderBottomWidth="1px"
+            borderLeftColor="transparent"
+            borderLeftWidth={5}
             whiteSpace="normal"
             h={14}
-            bg={collectionId === name ? "gray.100" : "transparent"}
+            bg="transparent"
+            _hover={{ textDecor: "none" }}
+            {...activeStyles(name)}
           >
             <Text as="span" noOfLines={1}>
               {name}
@@ -172,60 +194,121 @@ function IframePreview() {
 
 function EntityList() {
   let { collectionId, id } = useParams();
-  const { data, status } = useCollection(collectionId!);
-  const { schema } = useStore();
-  const collectionSchema = schema?.collections?.[collectionId!];
-  const key = Object.keys(schema?.collections?.[collectionId!])[0];
-  console.log({ collectionId, id });
+  const list = api.collections.list.useQuery(collectionId, { enabled: !!collectionId });
+
   return (
-    <Stack direction="row">
-      <Stack spacing={0} w={72} overflowY="hidden" borderRightColor="gray.200" borderRightWidth="1px">
-        {/* @ts-ignore */}
-        {data?.map((item) => {
-          return (
-            <Button
-              key={item.id}
-              as={Link}
-              to={String(item.id)}
-              rounded="none"
-              textAlign="left"
-              justifyContent="flex-start"
-              borderBottomColor="gray.200"
-              borderBottomWidth="1px"
-              w="full"
-              whiteSpace="normal"
-              h={14}
-              bg={String(id) === String(item.id) ? "gray.100" : "transparent"}
-            >
-              <Text as="span" noOfLines={1}>
-                {item[key]}
-              </Text>
-            </Button>
-          );
-        })}
+    <Stack spacing={4} w="full" px={12} py={4}>
+      {/* <Heading textTransform="capitalize">{collectionId}</Heading> */}
+      <Stack spacing={4}>
+        <FormControl>
+          <FormLabel textTransform="capitalize" fontSize="5xl">
+            {collectionId}
+          </FormLabel>
+          <Input />
+        </FormControl>
+        <Stack spacing={1} w="full">
+          {list.data?.map(({ id: cuid, ...rest }) => {
+            const [key, value] = Object.entries(rest)?.[0] || ["", ""];
+            return (
+              <Button
+                px={4}
+                variant="link"
+                key={cuid}
+                as={Link}
+                to={String(cuid)}
+                rounded="none"
+                textAlign="left"
+                justifyContent="flex-start"
+                color="gray.900"
+                w="full"
+                whiteSpace="normal"
+                h={14}
+                bg="gray.50"
+                // bg={String(id) === String(cuid) ? "gray.100" : "transparent"}
+              >
+                <Text as="span" noOfLines={1}>
+                  {value as string}
+                </Text>
+              </Button>
+            );
+          })}
+        </Stack>
       </Stack>
-      <Outlet />
     </Stack>
   );
 }
 
 function EntityForm() {
   let { collectionId, id } = useParams();
-  const { data, status } = useCollection(collectionId!);
-  console.log({ data });
-  const result = React.useMemo(() => {
-    if (!data) return {};
-    // @ts-ignore
-    return data.find((it) => String(it.id) === String(id));
-  }, [id, data]);
+  const { schema } = useStore();
+  const item = api.collections.get.useQuery({ id: id!, name: collectionId! }, { enabled: !!collectionId && !!id });
 
+  // const { data, status } = useCollection(collectionId!);
+  // console.log({ data });
+  // const result = React.useMemo(() => {
+  //   if (!data) return {};
+  //   // @ts-ignore
+  //   return data.find((it) => String(it.id) === String(id));
+  // }, [id, data]);
+  // @ts-expect-error ...
+  const entity = schema.collections[collectionId];
+  // console.log({ entity });
+  const list = Object.entries(entity);
+
+  // console.log(item.data );
   return (
-    <Stack>
-      <Box as="pre" maxW={72}>
-        {JSON.stringify(result, null, 2)}
-      </Box>
+    <Stack py={4} w="full">
+      <Container maxW="3xl" w="full">
+        <Stack spacing={4}>
+          {list.map(([key, value]) => {
+            // @ts-expect-error ...
+            if (value.type === "string") {
+              return (
+                <FormControl key={key}>
+                  <FormLabel textTransform="capitalize">{key}</FormLabel>
+                  <Input defaultValue={item.data?.[key] ?? ""} />
+                </FormControl>
+              );
+            }
+            // @ts-expect-error ...
+            if (value.type === "markdown") {
+              return (
+                <FormControl key={key}>
+                  <FormLabel textTransform="capitalize">{key}</FormLabel>
+                  <Textarea defaultValue={item.data?.[key] ?? ""} />
+                </FormControl>
+              );
+            }
+            // @ts-expect-error ...
+            if (value.type === "hasMany") {
+              // @ts-expect-error ...
+              const entity = value.schema._def.value;
+              const ids = item.data?.[entity] as string[];
+              return <HasMany key={key} name={entity} ids={ids} />;
+            }
+            // @ts-expect-error ...
+            if (value.type === "hasOne") {
+              // @ts-expect-error ...
+              const entity = value.schema._def.value;
+              const id = item.data?.[entity] as string;
+              console.log({ id, entity, item });
+              return <HasOne key={key} name={entity} id={id[0]} />;
+            }
+          })}
+        </Stack>
+      </Container>
     </Stack>
   );
+}
+
+function HasMany({ name, ids }: { name: string; ids: string[] }) {
+  const item = api.collections.getRelated.useQuery({ ids, name }, { enabled: !!ids && !!name });
+  return <Box as="pre">{JSON.stringify(item.data ?? {}, null, 2)}</Box>;
+}
+function HasOne({ name, id }: { name: string; id: string }) {
+  const item = api.collections.getRelatedOne.useQuery({ id, name }, { enabled: !!id && !!name });
+  console.log({ item });
+  return <Box as="pre">{JSON.stringify(item.data ?? {}, null, 2)}</Box>;
 }
 
 const state = proxy({
