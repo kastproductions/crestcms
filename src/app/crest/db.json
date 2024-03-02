@@ -1,0 +1,93 @@
+{
+  "author": [
+    {
+      "id": 1,
+      "name": "Jane Doe",
+      "avatar": "https://example.com/avatars/janedoe.jpg",
+      "posts": [1, 2]
+    },
+    {
+      "id": 2,
+      "name": "John Smith",
+      "avatar": "https://example.com/avatars/johnsmith.jpg",
+      "posts": [3]
+    }
+  ],
+  "post": [
+    {
+      "id": 1,
+      "title": "Exploring the Great Outdoors",
+      "body": "Discover the beauty of nature through our comprehensive guide to outdoor adventures.",
+      "author": 1
+    },
+    {
+      "id": 2,
+      "title": "The Art of Cooking",
+      "body": "Explore culinary delights from around the world with our expertly curated recipes.",
+      "author": 1
+    },
+    {
+      "id": 3,
+      "title": "The Future of Technology",
+      "body": "Dive into the latest tech trends and innovations shaping our future.",
+      "author": 2
+    }
+  ],
+  "seo": [
+    {
+      "id": 1,
+      "title": "Welcome to Our Blog",
+      "description": "Join us on a journey of discovery with content ranging from outdoor adventures to culinary explorations."
+    },
+    {
+      "id": 2,
+      "title": "Explore Our Latest Posts",
+      "description": "Stay updated with our latest articles and insights on various topics."
+    },
+    {
+      "id": 3,
+      "title": "Learn More About Us",
+      "description": "Discover what drives our passion and commitment to curating quality content."
+    }
+  ],
+  "hero": [
+    {
+      "id": 1,
+      "title": "Adventure Awaits",
+      "subtitle": "Embark on a journey of discovery and exploration."
+    },
+    {
+      "id": 2,
+      "title": "Insights and Innovations",
+      "subtitle": "Stay ahead with the latest trends and updates."
+    },
+    {
+      "id": 3,
+      "title": "About Our Mission",
+      "subtitle": "Understanding the values and vision that guide us."
+    }
+  ],
+  "homePage": {
+    "id": 1,
+    "seo": 1,
+    "hero": 1
+  },
+  "postsPage": {
+    "id": 2,
+    "seo": 2,
+    "hero": 2,
+    "posts": [1, 2, 3]
+  },
+  "aboutPage": {
+    "id": 3,
+    "seo": 3,
+    "hero": 3,
+    "about": "<p>Our mission is to enlighten and entertain our readers with high-quality content.</p>"
+  },
+  "settings": {
+    "id": 1,
+    "websiteUrl": "https://example.com",
+    "twitterUrl": "https://twitter.com/example",
+    "instagramUrl": "https://instagram.com/example"
+  }
+}
