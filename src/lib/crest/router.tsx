@@ -80,12 +80,12 @@ function Dashboard() {
   return (
     <Stack w="full" spacing={0}>
       <SimpleGrid columns={6} spacing={6} p={6}>
-        {summary.data?.map(({ name, count }) => {
+        {summary.data?.map(({ collection, count }) => {
           return (
             <Button
-              key={name}
+              key={collection}
               as={Link}
-              to={`collection/${name}`}
+              to={`collection/${collection}`}
               textAlign="left"
               justifyContent="flex-start"
               borderColor="gray.200"
@@ -99,7 +99,7 @@ function Dashboard() {
               }}
             >
               <Text as="span" noOfLines={1}>
-                {name} ({count})
+                {collection} ({count})
               </Text>
             </Button>
           );
@@ -133,7 +133,7 @@ function Header() {
 function SideNavigation() {
   const { collectionNames } = useStore();
   let { collectionId } = useParams();
-  const collections = api.collections.list.useQuery();
+  const summary = api.collections.summary.useQuery();
 
   const activeStyles = (name: string) => {
     const active = collectionId === name;
@@ -157,15 +157,15 @@ function SideNavigation() {
       <Text mb={4} color="gray.500" textTransform="uppercase" pt={5} px={4} fontSize="sm" fontWeight="semibold">
         Collections
       </Text>
-      {collections.data?.map((name) => {
+      {summary.data?.map(({ collection }) => {
         return (
           <Button
-            key={name}
+            key={collection}
             w="full"
             px={4}
             color="gray.900"
             as={Link}
-            to={`collection/${name}`}
+            to={`collection/${collection}`}
             variant="link"
             rounded="none"
             textAlign="left"
@@ -176,10 +176,10 @@ function SideNavigation() {
             h={14}
             bg="transparent"
             _hover={{ textDecor: "none" }}
-            {...activeStyles(name)}
+            {...activeStyles(collection)}
           >
             <Text as="span" noOfLines={1}>
-              {name}
+              {collection}
             </Text>
           </Button>
         );
@@ -194,7 +194,7 @@ function IframePreview() {
 
 function EntityList() {
   let { collectionId, id } = useParams();
-  const list = api.collections.list.useQuery(collectionId, { enabled: !!collectionId });
+  const list = api.collections.documents.useQuery(collectionId!, { enabled: !!collectionId });
 
   return (
     <Stack spacing={4} w="full" px={12} py={4}>
@@ -215,7 +215,7 @@ function EntityList() {
                 variant="link"
                 key={cuid}
                 as={Link}
-                to={String(cuid)}
+                to={String(id)}
                 rounded="none"
                 textAlign="left"
                 justifyContent="flex-start"
@@ -241,7 +241,10 @@ function EntityList() {
 function EntityForm() {
   let { collectionId, id } = useParams();
   const { schema } = useStore();
-  const item = api.collections.get.useQuery({ id: id!, name: collectionId! }, { enabled: !!collectionId && !!id });
+  const item = api.collections.documents.useQuery(
+    { id: id!, name: collectionId! },
+    { enabled: !!collectionId && !!id }
+  );
 
   // const { data, status } = useCollection(collectionId!);
   // console.log({ data });
@@ -283,16 +286,17 @@ function EntityForm() {
             if (value.type === "hasMany") {
               // @ts-expect-error ...
               const entity = value.schema._def.value;
-              const ids = item.data?.[entity] as string[];
+              const ids = item.data?.[key] as string[];
               return <HasMany key={key} name={entity} ids={ids} />;
             }
             // @ts-expect-error ...
             if (value.type === "hasOne") {
+              console.log({ item });
               // @ts-expect-error ...
               const entity = value.schema._def.value;
-              const id = item.data?.[entity] as string;
+              const id = item.data?.[key] as string;
               console.log({ id, entity, item });
-              return <HasOne key={key} name={entity} id={id[0]} />;
+              return <HasOne key={key} name={entity} id={id} />;
             }
           })}
         </Stack>
@@ -307,7 +311,6 @@ function HasMany({ name, ids }: { name: string; ids: string[] }) {
 }
 function HasOne({ name, id }: { name: string; id: string }) {
   const item = api.collections.getRelatedOne.useQuery({ id, name }, { enabled: !!id && !!name });
-  console.log({ item });
   return <Box as="pre">{JSON.stringify(item.data ?? {}, null, 2)}</Box>;
 }
 
